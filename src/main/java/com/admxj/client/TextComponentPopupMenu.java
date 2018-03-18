@@ -1,0 +1,134 @@
+package com.admxj.client;
+
+
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import javax.swing.JMenuItem;
+import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
+import javax.swing.JTextField;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.Position;
+
+public class TextComponentPopupMenu extends JPopupMenu implements MouseListener, ActionListener {
+    private static final long serialVersionUID = 117096441855319758L;
+    private static TextComponentPopupMenu sharedInstance = null;
+    JMenuItem cutItem;
+    JMenuItem copyItem;
+    JMenuItem pasteItem;
+    JMenuItem deleteItem;
+    JMenuItem selectAllItem;
+
+    public static void installToComponent(JTextComponent c) {
+        if (c instanceof JTextField && !(c instanceof JPasswordField)) {
+            c.addMouseListener(getSharedInstance());
+        }
+
+    }
+
+    public static void uninstallFromComponent(JTextComponent c) {
+        if (c instanceof JTextField && !(c instanceof JPasswordField)) {
+            c.removeMouseListener(getSharedInstance());
+        }
+
+    }
+
+    public TextComponentPopupMenu() {
+        this.add(this.cutItem = new JMenuItem("剪切"));
+        this.add(this.copyItem = new JMenuItem("复制"));
+        this.add(this.pasteItem = new JMenuItem("粘贴"));
+        this.add(this.deleteItem = new JMenuItem("删除"));
+        this.addSeparator();
+        this.add(this.selectAllItem = new JMenuItem("全选"));
+        this.cutItem.setMnemonic('T');
+        this.copyItem.setMnemonic('C');
+        this.pasteItem.setMnemonic('P');
+        this.deleteItem.setMnemonic('D');
+        this.selectAllItem.setMnemonic('A');
+        this.cutItem.addActionListener(this);
+        this.copyItem.addActionListener(this);
+        this.pasteItem.addActionListener(this);
+        this.deleteItem.addActionListener(this);
+        this.selectAllItem.addActionListener(this);
+    }
+
+    static TextComponentPopupMenu getSharedInstance() {
+        if (sharedInstance == null) {
+            sharedInstance = new TextComponentPopupMenu();
+        }
+
+        return sharedInstance;
+    }
+
+    public void mouseReleased(MouseEvent e) {
+        if (e.isPopupTrigger() && e.getSource() instanceof JTextField) {
+            JTextField textfield = (JTextField)e.getSource();
+            if (Boolean.TRUE.equals(textfield.getClientProperty("DisablePopupMenu"))) {
+                return;
+            }
+
+            textfield.requestFocusInWindow();
+            this.show(textfield, e.getX(), e.getY());
+        }
+
+    }
+
+    public void mouseClicked(MouseEvent e) {
+    }
+
+    public void mousePressed(MouseEvent e) {
+    }
+
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    public void mouseExited(MouseEvent e) {
+    }
+
+    public void show(Component invoker, int x, int y) {
+        JTextComponent tc = (JTextComponent)invoker;
+        String sel = tc.getSelectedText();
+        boolean selected = sel != null && !sel.equals("");
+        boolean enableAndEditable = tc.isEnabled() && tc.isEditable();
+        this.cutItem.setEnabled(selected && enableAndEditable);
+        this.copyItem.setEnabled(selected && tc.isEnabled());
+        this.deleteItem.setEnabled(selected && enableAndEditable);
+        this.pasteItem.setEnabled(enableAndEditable);
+        this.selectAllItem.setEnabled(tc.isEnabled());
+        super.show(invoker, x, y);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        JTextComponent tc = (JTextComponent)this.getInvoker();
+        String sel = tc.getSelectedText();
+        if (e.getSource() == this.cutItem) {
+            tc.cut();
+        } else if (e.getSource() == this.copyItem) {
+            tc.copy();
+        } else if (e.getSource() == this.pasteItem) {
+            tc.paste();
+        } else if (e.getSource() == this.selectAllItem) {
+            tc.selectAll();
+        } else if (e.getSource() == this.deleteItem) {
+            Document doc = tc.getDocument();
+            int start = tc.getSelectionStart();
+            int end = tc.getSelectionEnd();
+
+            try {
+                Position p0 = doc.createPosition(start);
+                Position p1 = doc.createPosition(end);
+                if (p0 != null && p1 != null && p0.getOffset() != p1.getOffset()) {
+                    doc.remove(p0.getOffset(), p1.getOffset() - p0.getOffset());
+                }
+            } catch (BadLocationException var9) {
+                ;
+            }
+        }
+
+    }
+}
